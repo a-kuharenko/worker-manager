@@ -2,11 +2,12 @@
 
 const WorkerManager = require('../worker_manager');
 
-const task = new Array(100).fill(10);
-const workerCount = 5;
-const partsCount = 10;
+const task = new Array(100).fill(0).map((value, index) => value + index);
+const workersAmount = 5;
+const partsAmount = 10;
 
-const wm = new WorkerManager(task, workerCount, partsCount);
+const wm = new WorkerManager(task, workersAmount, partsAmount);
+
 wm.workers.forEach(worker => {
 
   worker.on('exit', () => {

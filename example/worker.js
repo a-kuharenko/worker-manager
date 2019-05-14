@@ -1,23 +1,16 @@
 
 'use strict';
 
-const threads = require('worker_threads');
-
-const { bufferData, bufferLock, id } = threads.workerData;
-const array = new Int32Array(bufferData);
-const lock = new Int32Array(bufferLock);
-const locked = 0;
-const unlocked = 1;
+const { WorkerFromManager } = require('./workerManager');
 
 const fn = n => (n <= 1 ? n : fn(n - 1) + fn(n - 2));
 
-threads.parentPort.on('message', message => {
-  if (message.data === 'start') {
-    console.log(`Worker ${id} was started`);
-    array.map((value, index) =>
-      (Atomics.compareExchange(lock, index, unlocked, locked) === 1 ?
-        Atomics.store(array, index, fn(value)) : 0));
-    threads.parentPort.postMessage({ data: 'done', id });
-  }
-});
+const description = worker => {
+  worker.on('message', (message) => {
+    if (message.data === 'start')
+      console.log(`Worker ${message.id} is started`);
+  });
+};
+const worker = new WorkerFromManager(description);
+worker.setFn(fn);
 

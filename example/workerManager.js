@@ -5,8 +5,7 @@ const { Worker } = threads;
 
 class WorkerManager {
   constructor(workersAmount) {
-    this.workersAmount = require('os').cpus() < workersAmount ?
-      require('os').cpus() : workersAmount;
+    this.workersAmount = workersAmount;
   }
 
   _createWorkers() {
@@ -35,7 +34,7 @@ class WorkerManager {
     this.finished = 0;
     this.workers.forEach(worker => {
       worker.postMessage({ data: 'start' });
-      worker.on('message', (message) => {
+      worker.on('message', message => {
         if (message.data === 'done') {
           this.finished++ === this.workersAmount - 1 ?
             callback(this.array) : this.finished;

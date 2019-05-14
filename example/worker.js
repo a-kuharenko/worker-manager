@@ -11,15 +11,12 @@ const unlocked = 1;
 
 const fn = n => (n <= 1 ? n : fn(n - 1) + fn(n - 2));
 
-threads.parentPort.on('message', (message) => {
+threads.parentPort.on('message', message => {
   if (message.data === 'start') {
     console.log(`Worker ${id} was started`);
-    array.map((value, index) => {
-      if (Atomics.compareExchange(lock, index, unlocked, locked) === 1) {
-        const res = fn(value);
-        Atomics.store(array, index, res);
-      }
-    });
+    array.map((value, index) =>
+      (Atomics.compareExchange(lock, index, unlocked, locked) === 1 ?
+        Atomics.store(array, index, fn(value)) : 0));
     threads.parentPort.postMessage({ data: 'done', id });
   }
 });

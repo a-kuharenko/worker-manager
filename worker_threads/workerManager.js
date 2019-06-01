@@ -4,77 +4,79 @@ const threads = require('worker_threads');
 const { Worker } = threads;
 
 class WorkerManager {
-  constructor(workersAmount, description) {
+  constructor(workersAmount, description = () => new Worker('./worker.js')) {
     this.workersAmount = workersAmount;
-    this.createWorkers(description);
+    this._createWorkers(description);
+    this.finished = 0;
   }
 
   sendData(task) {
     this._createBuffers(task);
     this.workers.forEach((worker, index) => {
-      worker.postMessage({ workerData: { bufferData: this.bufferData,
-        bufferLock: this.bufferLock, id: index  } });
+      worker.postMessage({ workerData: { bufferData: this._bufferData,
+        bufferLock: this._bufferLock, id: index  } });
     });
   }
-  createWorkers(description) {
+  _createWorkers(description) {
     this.workers = new Array(this.workersAmount).fill(0)
       .map(() => description(new Worker('./worker.js')));
   }
 
   _createBuffers(task) {
-    const bytes = task.length * 32 / 8;
-    const unlocked = 1;
-    this.bufferData = new SharedArrayBuffer(bytes);
-    this.bufferLock = new SharedArrayBuffer(bytes);
-    this.array = new Int32Array(this.bufferData);
-    this.lock = new Int32Array(this.bufferLock).fill(unlocked);
+    const bytes = task.length * 4;
+    const UNLOCKED = 1;
+    this._bufferData = new SharedArrayBuffer(bytes);
+    this._bufferLock = new SharedArrayBuffer(bytes);
+    this.array = new Int32Array(this._bufferData);
+    new Int32Array(this._bufferLock).fill(UNLOCKED);
     task.forEach((value, index) => {
       this.array[index] = value;
     });
   }
 
   runTask(callback) {
-    this.finished = 0;
     this.workers.forEach((worker, index) => {
       worker.postMessage({ data: 'start', id: index });
-      worker.on('message', message => {
-        if (message.data === 'done') {
-          this.finished++ === this.workersAmount - 1 ?
-            callback(this.array) : this.finished;
-          //worker.terminate();
-        }
+      worker.on('message',  message => {
+        if (message.data === 'done' &&
+            ++this.finished === this.workersAmount)
+          callback(this.array);
       });
+    });
+  }
+
+  killWorkers() {
+    this.workers.map(worker => {
+      worker.terminate();
     });
   }
 }
 
-class WorkerFromManager {
-  constructor(description) {
-
-    const locked = 0;
-    const unlocked = 1;
-    this.fn = () => {};
+class WmWorker {
+  constructor(fn, description = () => {}) {
+    this.fn = fn;
     description(threads.parentPort);
+    this._setDefaultDescription();
+  }
+
+  _setDefaultDescription() {
+    const LOCKED = 0;
+    const UNLOCKED = 1;
     threads.parentPort.on('message', message => {
       if (message.workerData) {
         const { bufferData, bufferLock, id } = message.workerData;
         this.array = new Int32Array(bufferData);
         this.lock = new Int32Array(bufferLock);
         this.id = id;
-      }
-      if (message.data === 'start') {
+      } else if (message.data === 'start') {
         this.array.map((value, index) =>
           (Atomics.compareExchange(this.lock, index,
-            unlocked, locked) === 1 ?
+            UNLOCKED, LOCKED) === 1 ?
             Atomics.store(this.array, index, this.fn(value)) : 0));
         threads.parentPort.postMessage({ data: 'done', id: this.id });
       }
     });
   }
-
-  setFn(fn) {
-    this.fn = fn;
-  }
 }
 
-module.exports = { WorkerManager, WorkerFromManager };
+module.exports = { WorkerManager, WmWorker };

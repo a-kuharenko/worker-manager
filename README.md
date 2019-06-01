@@ -1,5 +1,7 @@
 # Worker-Manager
 ## **Worker-manager based on worker_threads.**
+This facade above 'worker_threads' allows to run parallel calculations with avoiding work with sharedArray and Atomics.
+![Screenshot](./worker_threads/scheme.jpeg);
 ### Documentation:  
 *./master.js*
 ```js

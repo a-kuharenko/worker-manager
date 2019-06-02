@@ -123,7 +123,8 @@ new WmWorker(fn, description);
 ## **Worker-manager based on cluster.**
 This facade above 'cluster' allows to split up the task between workers and put together the results of their parallel work. 
 General idea:
-![Screenshot](./cluster/scheme.jpeg)
+
+![Screenshot](./cluster/scheme.png)
 ### Documentation:  
 *./master.js*
 ```js

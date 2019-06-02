@@ -1,6 +1,6 @@
 'use strict';
 
-const { WorkerManager } = require('../workerManager');
+const { WorkerManager } = require('../worker_manager');
 
 const task = new Array(10000000).fill(0).map(() => 10);
 const description = worker => {
@@ -19,7 +19,8 @@ const description = worker => {
   return worker;
 };
 
-const wm = new WorkerManager(4, description);
+const wm = new WorkerManager(4, './worker.js', description);
+
 wm.sendData(task);
 wm.runTask(res => {
   console.log(res);

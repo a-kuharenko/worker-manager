@@ -4,28 +4,23 @@ const cluster = require('cluster');
 const CPUS = require('os').cpus();
 
 class WorkerManager {
-  constructor(workersAmount) {
+  constructor(workersAmount, description = worker => worker) {
     workersAmount = CPUS < workersAmount ?
       CPUS : workersAmount;
-
+    this.partsAmount = workersAmount;
     this.workers = new Array(workersAmount).fill(0)
-      .map(() => cluster.fork());
+      .map(() => description(cluster.fork()));
   }
 
-  setDescription(description) {
-    this.workers = this.workers.map(description);
-  }
+  setTask(task) {
 
-  setTask(task, partsAmount) {
-    this.task = task;
-    this.partsAmount = partsAmount;
-
-    const partLength = task.length % partsAmount === 0 ?
-      task.length / partsAmount :
-      Math.trunc(task.length / partsAmount) + 1;
+    const partLength = task.length % this.partsAmount === 0 ?
+      task.length / this.partsAmount :
+      Math.trunc(task.length / this.partsAmount) + 1;
 
     let startIndex = 0;
-    this.tasks = new Array(partsAmount).fill(0)
+
+    this.tasks = new Array(this.partsAmount).fill(0)
       .map(value => {
         value = task.slice(startIndex, startIndex + partLength);
         startIndex += partLength;
@@ -37,12 +32,11 @@ class WorkerManager {
     let result = [];
     this.workers.forEach(worker => {
       worker.on('message', message => {
-        this.partsAmount--;
         result[message.id] = message.result;
-        this._sendTaskToWorker(worker);
+        this.partsAmount--;
         if (this.partsAmount === 0) {
-          result = result.reduce((accumulator, currentValue) =>
-            [...accumulator, ...currentValue]);
+          result = result.reduce((array, subarray) =>
+            [...array, ...subarray]);
           callback(result);
         }
       });

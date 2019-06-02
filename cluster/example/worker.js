@@ -1,11 +1,9 @@
 'use strict';
 
-//console.log(`Worker ${process.pid} ready`);
-
-const fn = n => (n <= 1 ? n : fn(n - 1) + fn(n - 2));
+const fn = x => parseInt(Math.pow(x, x) /
+  Math.log10(x) * Math.tan(x * Math.random()));
 
 process.on('message', message => {
   const result = message.task.map(fn);
-  //console.log(`Worker ${process.pid} has a result`);
   process.send({ result, id: message.id });
 });

@@ -4,9 +4,9 @@ const threads = require('worker_threads');
 const { Worker } = threads;
 
 class WorkerManager {
-  constructor(workersAmount, description = () => new Worker('./worker.js')) {
+  constructor(workersAmount, path, description = (worker) => worker) {
     this.workersAmount = workersAmount;
-    this._createWorkers(description);
+    this._createWorkers(path, description);
     this.finished = 0;
   }
 
@@ -17,9 +17,9 @@ class WorkerManager {
         bufferLock: this._bufferLock, id: index  } });
     });
   }
-  _createWorkers(description) {
+  _createWorkers(path, description) {
     this.workers = new Array(this.workersAmount).fill(0)
-      .map(() => description(new Worker('./worker.js')));
+      .map(() => description(new Worker(path)));
   }
 
   _createBuffers(task) {
@@ -35,8 +35,8 @@ class WorkerManager {
   }
 
   runTask(callback) {
-    this.workers.forEach((worker, index) => {
-      worker.postMessage({ data: 'start', id: index });
+    this.workers.forEach((worker, id) => {
+      worker.postMessage({ data: 'start', id });
       worker.on('message',  message => {
         if (message.data === 'done' &&
             ++this.finished === this.workersAmount)

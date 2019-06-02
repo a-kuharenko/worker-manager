@@ -1,4 +1,7 @@
 # Worker-Manager
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/806c809ae9a64cab93dd6333dd60a4f4)](https://app.codacy.com/app/a-kuharenko/worker-manager?utm_source=github.com&utm_medium=referral&utm_content=a-kuharenko/worker-manager&utm_campaign=Badge_Grade_Dashboard)
+
 ## **Worker-manager based on worker_threads**
 This facade above 'worker_threads' allows to run parallel calculations with avoiding work with sharedArray and Atomics.
 General idea:

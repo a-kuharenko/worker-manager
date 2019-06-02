@@ -6,20 +6,16 @@ const { Worker } = threads;
 class WorkerManager {
   constructor(workersAmount, path, description = (worker) => worker) {
     this.workersAmount = workersAmount;
-    this._createWorkers(path, description);
-    this.finished = 0;
+    this.workers = new Array(this.workersAmount).fill(0)
+      .map(() => description(new Worker(path)));
   }
 
   sendData(task) {
     this._createBuffers(task);
-    this.workers.forEach((worker, index) => {
+    this.workers.forEach((worker, id) => {
       worker.postMessage({ workerData: { bufferData: this._bufferData,
-        bufferLock: this._bufferLock, id: index  } });
+        bufferLock: this._bufferLock, id } });
     });
-  }
-  _createWorkers(path, description) {
-    this.workers = new Array(this.workersAmount).fill(0)
-      .map(() => description(new Worker(path)));
   }
 
   _createBuffers(task) {
@@ -35,11 +31,12 @@ class WorkerManager {
   }
 
   runTask(callback) {
+    let finished = 0;
     this.workers.forEach((worker, id) => {
       worker.postMessage({ data: 'start', id });
       worker.on('message',  message => {
         if (message.data === 'done' &&
-            ++this.finished === this.workersAmount)
+            ++finished === this.workersAmount)
           callback(this.array);
       });
     });
@@ -60,22 +57,29 @@ class WmWorker {
   }
 
   _setDefaultDescription() {
-    const LOCKED = 0;
-    const UNLOCKED = 1;
     threads.parentPort.on('message', message => {
       if (message.workerData) {
-        const { bufferData, bufferLock, id } = message.workerData;
-        this.array = new Int32Array(bufferData);
-        this.lock = new Int32Array(bufferLock);
-        this.id = id;
+        this._setBuffers(message.workerData);
       } else if (message.data === 'start') {
-        this.array.map((value, index) =>
-          (Atomics.compareExchange(this.lock, index,
-            UNLOCKED, LOCKED) === 1 ?
-            Atomics.store(this.array, index, this.fn(value)) : 0));
+        this._runTask();
         threads.parentPort.postMessage({ data: 'done', id: this.id });
       }
     });
+  }
+
+  _setBuffers(workerData) {
+    const { bufferData, bufferLock, id } = workerData;
+    this.array = new Int32Array(bufferData);
+    this.lock = new Int32Array(bufferLock);
+    this.id = id;
+  }
+
+  _runTask() {
+    const LOCKED = 0;
+    const UNLOCKED = 1;
+    this.array.forEach((value, index) =>
+      (Atomics.compareExchange(this.lock, index, UNLOCKED, LOCKED) === 1 ?
+        Atomics.store(this.array, index, this.fn(value)) : 0));
   }
 }
 

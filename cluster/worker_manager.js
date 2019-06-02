@@ -13,7 +13,6 @@ class WorkerManager {
   }
 
   setTask(task) {
-
     const partLength = task.length % this.partsAmount === 0 ?
       task.length / this.partsAmount :
       Math.trunc(task.length / this.partsAmount) + 1;

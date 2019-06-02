@@ -21,7 +21,6 @@ const wm = new WorkerManager(workersAmount, path, description);
           wm.workers:         Array{array of workers}
           wm.workerAmount:    Number{number of workers}
           wm.array:           Int32Array{array from buffer with data}
-          wm.finished:        Number{number of workers that finished their task}
      
       methods:
           wm.sendData(task)

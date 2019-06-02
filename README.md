@@ -1,13 +1,13 @@
 # Worker-Manager
-## **Worker-manager based on worker_threads.**
+## **Worker-manager based on worker_threads**
 This facade above 'worker_threads' allows to run parallel calculations with avoiding work with sharedArray and Atomics.
 General idea:
 
 ![Screenshot](./worker_threads/scheme.jpeg)
-### Documentation:  
+### Documentation 1
 *./master.js*
 ```js
-const { WorkerManager } = require('./workerManager');
+const { WorkerManager } = require('./worker_manager');
 const wm = new WorkerManager(workersAmount, path, description);
 ```  
       workersAmount:         Number{number of workers}
@@ -54,7 +54,7 @@ const wm = new WorkerManager(workersAmount, path, description);
                     
 *./worker.js*   
 ```js
-const { WmWorker } = require('./workerManager');
+const { WmWorker } = require('./worker_manager');
 const worker = new WmWorker(fn, description);
 ````
 
@@ -71,12 +71,12 @@ const worker = new WmWorker(fn, description);
       does: WmWorker processes task array with other WmWorkers and sends postMessage to 
       parentPort with data: 'done', when WmWorker finished his work.
       
-### Using 
+### Using WM above worker_threads
 *./master.js* 
 ```js
 'use strict';
 
-const { WorkerManager } = require('./workerManager');
+const { WorkerManager } = require('./worker_manager');
 
 const task = new Array(10000000).fill(0).map(() => 10);
 const description = worker => {
@@ -106,7 +106,7 @@ wm.runTask(res => {
 ```js
 'use strict';
 
-const { WmWorker } = require('./workerManager');
+const { WmWorker } = require('./worker_manager');
 
 const fn = x => parseInt(Math.pow(x, x) /
   Math.log10(x) * Math.tan(x * Math.random()));
@@ -120,12 +120,12 @@ const description = worker => {
 new WmWorker(fn, description);
 ```
 
-## **Worker-manager based on cluster.**
+## **Worker-manager based on cluster**
 This facade above 'cluster' allows to split up the task between workers and put together the results of their parallel work. 
 General idea:
 
 ![Screenshot](./cluster/scheme.png)
-### Documentation:  
+### Documentation 2 
 *./master.js*
 ```js
 const WorkerManager = require('./worker_manager');
@@ -170,7 +170,7 @@ const wm = new WorkerManager(workersAmount, description);
                 does:
                     Terminate all workers.
                     
-### Using 
+### Using WM above cluster
 *./multicore.js* 
 ```js
 'use strict';

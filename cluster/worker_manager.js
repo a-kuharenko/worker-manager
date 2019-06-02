@@ -51,7 +51,7 @@ class WorkerManager {
     const task = this.tasks.pop();
     if (task)
       worker.send({ task, id: this.tasks.length });
-  };
+  }
 }
 
 module.exports = WorkerManager;

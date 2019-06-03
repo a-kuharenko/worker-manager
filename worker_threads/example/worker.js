@@ -2,9 +2,13 @@
 'use strict';
 
 const { WmWorker } = require('../worker_manager');
+const fs = require('fs');
 
-const fn = x => parseInt(Math.pow(x, x) /
-  Math.log10(x) * Math.tan(x * Math.random()));
+const fn = id => {
+  const data = fs.readFileSync(`${__dirname}/source/file_${id}.txt`);
+  const matches = data.toString().match(/2/g);
+  return matches !== null ? matches.length : 0;
+};
 
 const description = worker => {
   worker.on('message', (message) => {

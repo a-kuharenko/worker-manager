@@ -4,7 +4,7 @@ const threads = require('worker_threads');
 const { Worker } = threads;
 
 class WorkerManager {
-  constructor(workersAmount, path, description = (worker) => worker) {
+  constructor(workersAmount, path, description = worker => worker) {
     this.workersAmount = workersAmount;
     this.workers = new Array(this.workersAmount).fill(0)
       .map(() => description(new Worker(path)));
@@ -43,9 +43,7 @@ class WorkerManager {
   }
 
   killWorkers() {
-    this.workers.map(worker => {
-      worker.terminate();
-    });
+    this.workers.forEach(worker => worker.terminate());
   }
 }
 

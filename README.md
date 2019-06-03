@@ -3,7 +3,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/806c809ae9a64cab93dd6333dd60a4f4)](https://app.codacy.com/app/a-kuharenko/worker-manager?utm_source=github.com&utm_medium=referral&utm_content=a-kuharenko/worker-manager&utm_campaign=Badge_Grade_Dashboard)
 
 ## **Worker-manager based on worker_threads**
-This facade above 'worker_threads' allows to run parallel calculations with avoiding work with sharedArray and Atomics.
+This facade above 'worker_threads' allows to run parallel calculations with avoiding work with SharedArrayBuffer and Atomics.
 General idea:
 
 ![Screenshot](./worker_threads/scheme.jpeg)
@@ -81,7 +81,7 @@ const worker = new WmWorker(fn, description);
 
 const { WorkerManager } = require('./worker_manager');
 
-const task = new Array(10000000).fill(0).map(() => 10);
+const task = new Array(100000).fill(0).map((value, index) => value + index);
 const description = worker => {
   worker.on('message', (message) => {
     if (message.data === 'done')
@@ -110,9 +110,13 @@ wm.runTask(res => {
 'use strict';
 
 const { WmWorker } = require('./worker_manager');
+const fs = require('fs');
 
-const fn = x => parseInt(Math.pow(x, x) /
-  Math.log10(x) * Math.tan(x * Math.random()));
+const fn = id => {
+  const data = fs.readFileSync(`${__dirname}/source/file_${id}.txt`);
+  const matches = data.toString().match(/2/g);
+  return matches !== null ? matches.length : 0;
+};
 
 const description = worker => {
   worker.on('message', (message) => {

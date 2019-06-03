@@ -2,7 +2,7 @@
 
 const { WorkerManager } = require('../worker_manager');
 
-const task = new Array(10000000).fill(0).map(() => 10);
+const task = new Array(100000).fill(0).map((value, index) => value + index);
 const description = worker => {
   worker.on('message', message => {
     if (message.data === 'done')

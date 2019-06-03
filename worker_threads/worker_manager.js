@@ -51,10 +51,6 @@ class WmWorker {
   constructor(fn, description = () => {}) {
     this.fn = fn;
     description(threads.parentPort);
-    this._setDefaultDescription();
-  }
-
-  _setDefaultDescription() {
     threads.parentPort.on('message', message => {
       if (message.workerData) {
         this._setBuffers(message.workerData);

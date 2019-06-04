@@ -19,12 +19,13 @@ class WorkerManager {
   }
 
   _createBuffers(task) {
-    const bytes = task.length * 4;
+    const bytesLock = task.length;
+    const bytesData = bytesLock * 4;
     const UNLOCKED = 1;
-    this._bufferData = new SharedArrayBuffer(bytes);
-    this._bufferLock = new SharedArrayBuffer(bytes);
+    this._bufferData = new SharedArrayBuffer(bytesData);
+    this._bufferLock = new SharedArrayBuffer(bytesLock);
     this.array = new Int32Array(this._bufferData);
-    new Int32Array(this._bufferLock).fill(UNLOCKED);
+    new Uint8Array(this._bufferLock).fill(UNLOCKED);
     task.forEach((value, index) => {
       this.array[index] = value;
     });
@@ -64,7 +65,7 @@ class WmWorker {
   _setBuffers(workerData) {
     const { bufferData, bufferLock, id } = workerData;
     this.array = new Int32Array(bufferData);
-    this.lock = new Int32Array(bufferLock);
+    this.lock = new Uint8Array(bufferLock);
     this.id = id;
   }
 

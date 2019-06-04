@@ -11,11 +11,11 @@ General idea:
 *./master.js*
 ```js
 const { WorkerManager } = require('./worker_manager');
-const wm = new WorkerManager(workersAmount, path, description);
+const wm = new WorkerManager(workersAmount, path, setHandlers);
 ```  
       workersAmount:         Number{number of workers}
       path:                  String{path to worker}
-      description(optional): Function{set events handlers for workers}
+      setHandlers(optional): Function{set events handlers for workers}
                               args: worker
                                 worker: Class{worker from worker_threads}
                               returns: worker
@@ -58,11 +58,11 @@ const wm = new WorkerManager(workersAmount, path, description);
 *./worker.js*   
 ```js
 const { WmWorker } = require('./worker_manager');
-const worker = new WmWorker(fn, description);
+const worker = new WmWorker(fn, setHandlers);
 ````
 
       fn:                    Function{function which will applied for every element of task}
-      description(optional): Function{set events handlers for parentPort}
+      setHandlers(optional): Function{set events handlers for parentPort}
                               args: parentPort
                               
       properties:
@@ -82,7 +82,7 @@ const worker = new WmWorker(fn, description);
 const { WorkerManager } = require('./worker_manager');
 
 const task = new Array(100000).fill(0).map((value, index) => value + index);
-const description = worker => {
+const setHandlers = worker => {
   worker.on('message', (message) => {
     if (message.data === 'done')
       console.log(`Worker ${message.id} is done`);
@@ -98,7 +98,7 @@ const description = worker => {
   return worker;
 };
 
-const wm = new WorkerManager(4, './worker.js', description);
+const wm = new WorkerManager(4, './worker.js', setHandlers);
 wm.sendData(task);
 wm.runTask(res => {
   console.log(res);
@@ -118,13 +118,13 @@ const fn = id => {
   return matches !== null ? matches.length : 0;
 };
 
-const description = worker => {
+const setHandlers = worker => {
   worker.on('message', (message) => {
     if (message.data === 'start')
       console.log(`Worker ${message.id} is started`);
   });
 };
-new WmWorker(fn, description);
+new WmWorker(fn, setHandlers);
 ```
 
 ## **Worker-manager based on cluster**
@@ -136,10 +136,10 @@ General idea:
 *./master.js*
 ```js
 const WorkerManager = require('./worker_manager');
-const wm = new WorkerManager(workersAmount, description);
+const wm = new WorkerManager(workersAmount, setHandlers);
 ```  
       workersAmount:         Number{number of workers}
-      description(optional): Function{set events handlers for workers}
+      setHandlers(optional): Function{set events handlers for workers}
                               args: worker
                               returns: worker
       
@@ -199,7 +199,7 @@ const WorkerManager = require('../worker_manager');
 const task = new Array(10000000).fill(0).map(() => 10);
 const workersAmount = 4;
 
-const description = worker => {
+const setHandlers = worker => {
   worker.on('exit', () => {
     console.log(`Worker ${worker.process.pid} was killed`);
   });
@@ -210,7 +210,7 @@ const description = worker => {
   return worker;
 };
 
-const wm = new WorkerManager(workersAmount, description);
+const wm = new WorkerManager(workersAmount, setHandlers);
 wm.setTask(task);
 wm.runTask((result) => {
   console.log(result);

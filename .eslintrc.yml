@@ -4,6 +4,9 @@ env:
 extends: 'eslint:recommended'
 parserOptions:
   ecmaVersion: 8
+globals:
+  Atomics: true
+  SharedArrayBuffer: true
 rules:
   indent:
     - error

@@ -3,25 +3,34 @@
 const threads = require('worker_threads');
 const { Worker } = threads;
 
+const UNLOCKED = 1;
+const LOCKED = 0;
+const id = x => x;
+
 class WorkerManager {
-  constructor(workersAmount, path, description = worker => worker) {
+  constructor(workersAmount, path, setHandlers = id) {
     this.workersAmount = workersAmount;
-    this.workers = new Array(this.workersAmount).fill(0)
-      .map(() => description(new Worker(path)));
+    this.workers = new Array(this.workersAmount)
+      .fill(0)
+      .map(() => setHandlers(new Worker(path)));
   }
 
   sendData(task) {
     this._createBuffers(task);
     this.workers.forEach((worker, id) => {
-      worker.postMessage({ workerData: { bufferData: this._bufferData,
-        bufferLock: this._bufferLock, id } });
+      worker.postMessage({
+        workerData: {
+          bufferData: this._bufferData,
+          bufferLock: this._bufferLock,
+          id
+        }
+      });
     });
   }
 
   _createBuffers(task) {
     const bytesLock = task.length;
-    const bytesData = bytesLock * 4;
-    const UNLOCKED = 1;
+    const bytesData = bytesLock * Int32Array.BYTES_PER_ELEMENT;
     this._bufferData = new SharedArrayBuffer(bytesData);
     this._bufferLock = new SharedArrayBuffer(bytesLock);
     this.array = new Int32Array(this._bufferData);
@@ -33,25 +42,32 @@ class WorkerManager {
 
   runTask(callback) {
     let finished = 0;
+    const { workersAmount } = this;
     this.workers.forEach((worker, id) => {
       worker.postMessage({ data: 'start', id });
-      worker.on('message',  message => {
-        if (message.data === 'done' &&
-            ++finished === this.workersAmount)
+      worker.on('message', message => {
+        finished++;
+        const { data } = message;
+        if (data === 'done' && finished === workersAmount) {
           callback(this.array);
+        }
       });
     });
   }
 
   killWorkers() {
-    this.workers.forEach(worker => worker.terminate());
+    this.workers.forEach(worker => {
+      worker.terminate();
+    });
   }
 }
 
 class WmWorker {
-  constructor(fn, description = () => {}) {
+  constructor(fn, setHandlers) {
     this.fn = fn;
-    description(threads.parentPort);
+    if (setHandlers) {
+      setHandlers(threads.parentPort);
+    }
     threads.parentPort.on('message', message => {
       if (message.workerData) {
         this._setBuffers(message.workerData);
@@ -70,11 +86,12 @@ class WmWorker {
   }
 
   _runTask() {
-    const LOCKED = 0;
-    const UNLOCKED = 1;
-    this.array.forEach((value, index) =>
-      (Atomics.compareExchange(this.lock, index, UNLOCKED, LOCKED) === 1 ?
-        Atomics.store(this.array, index, this.fn(value)) : 0));
+    this.array.forEach((value, index) => {
+      const prev = Atomics.compareExchange(this.lock, index, UNLOCKED, LOCKED);
+      if (prev === UNLOCKED) {
+        Atomics.store(this.array, index, this.fn(value));
+      }
+    });
   }
 }
 

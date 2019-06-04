@@ -1,7 +1,7 @@
 'use strict';
 
 const cluster = require('cluster');
-const CPUS = require('os').cpus();
+const CPUS = require('os').cpus().length;
 
 const join = arrays => arrays
   .reduce((array, subarray) => [...array, ...subarray]);
@@ -20,16 +20,10 @@ class WorkerManager {
       task.length / this.partsAmount :
       Math.trunc(task.length / this.partsAmount) + 1;
 
-    let startIndex = 0;
-
-    // TODO: try to refactor
-    this.tasks = new Array(this.partsAmount)
-      .fill(0)
-      .map(() => {
-        const res = task.slice(startIndex, startIndex + partLength);
-        startIndex += partLength;
-        return res;
-      });
+    this.tasks = new Array(this.partsAmount);
+    for (let i = 0, j = 0; i < task.length; i += partLength, j++) {
+      this.tasks[j] = task.slice(i, i + partLength);
+    }
   }
 
   runTask(callback) {
